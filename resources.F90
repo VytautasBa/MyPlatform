@@ -16,9 +16,9 @@ module resources
 
 	!! method parameters
 	!!
-	integer, parameter :: Ks = 1 ! number of Bose-Einstein poles, i.e. there are Ks+1 poles in total
-	integer(sp), parameter :: Ls = 15 ! depth of the hierarchy: # tiers ABOVE 0'th, i.e. there are Ls+1 ADO's in total
-	! these need to be 'parameters' because some non-allocatable matrices they give dimensions to
+	integer, parameter :: Ks = 2 ! number of Bose-Einstein poles, i.e. there are Ks+1 poles in total
+	integer(sp), parameter :: Ls = 9 ! depth of the hierarchy: # tiers ABOVE 0'th, i.e. there are Ls+1 ADO's in total
+	! these need to be 'parameters' because of some non-allocatable matrices they give dimensions to
 
 	!! system + system-bath parameters
 	!!
@@ -63,6 +63,9 @@ module resources
 	integer, dimension(:,:,:), allocatable :: index_p1	! INDEX_p1[I,n,k]
 	integer, dimension(:,:,:), allocatable :: index_m1
 
+	complex(dpc), dimension(:,:,:), allocatable :: norma_m1 ! normalization factors for +/- 1 neighbour terms
+    complex(dpc), dimension(:,:,:), allocatable :: norma_p1
+
 	complex(dpc), dimension(:,:), allocatable :: c_ik		! correlation function coefficients (i= site #,k= pole #)
 	real(dp), dimension(:,:), allocatable     :: gamma_ik 	! gamma's = cor. f. poles
 	real(dp), dimension(:), allocatable       :: delta_i	! delta's (sites)
@@ -85,7 +88,7 @@ contains
 		!!
 
 		! 'operational'
-		out_dir="/home/workspace/myplatform/out"
+		out_dir="/home/Vytautas/MyPlatform/out" ! it takes the path to wd "/home/workspace/myplatform/" by default?
 
 		! 'calculational'
 		beta_int = 1/(Temperature * kB_intK)
@@ -93,8 +96,8 @@ contains
 		dt  = 1.0_dp
 		gt1 = 1
 		gt2 = 1
-		Nt1 = 1024 ! better keep it a power of 2 when using Spectroscopy
-		Nt2 = 151
+		Nt1 = 1024!1024 ! better keep it a power of 2 when using Spectroscopy
+		Nt2 = 91
 
 		! 'system'
 		call set_system_parameters()
@@ -110,6 +113,10 @@ contains
 		allocate( index_n(0:NN-1,Ns,Ks+1))
 		allocate(index_p1(0:NN-1,Ns,Ks+1))
 		allocate(index_m1(0:NN-1,Ns,Ks+1))
+
+		allocate(norma_p1(0:NN-1,Ns,Ks+1))
+        allocate(norma_m1(0:NN-1,Ns,Ks+1))
+
 
 	end subroutine set_values
 
@@ -162,8 +169,9 @@ contains
 		dd(1) = 0.5_dp
 		dd(2) = 0.5_dp
 
-		re_en(1) = 30.0_dp * Energy_cm_to_internal !30
-		re_en(2) = 30.0_dp * Energy_cm_to_internal !30
+		re_en(1) = 20.0_dp * Energy_cm_to_internal !30
+		re_en(2) = 20.0_dp * Energy_cm_to_internal !30
+!		print *, "Reorganization energies: ", re_en(1), re_en(2)
 
 		gamma_i(1) = 1.0_dp/100.0_dp
 		gamma_i(2) = 1.0_dp/100.0_dp
@@ -175,6 +183,7 @@ contains
 		forall(i= 1:Ns)
 			HH(i,i) = HH(i,i) + en(i)
 		end forall
+
 
 	end subroutine set_system_parameters
 
@@ -273,6 +282,11 @@ contains
 			gamma_ik(m,2:Ks+1) = fi(1:Ks)
 		end forall
 
+!        print *, "gamma_ik: ", gamma_ik(1,1), gamma_ik(2,1)
+!        print *, "gamma_ik: ", gamma_ik(1,2), gamma_ik(2,2)
+!        print *, "gamma_ik: ", gamma_ik(1,3), gamma_ik(2,3)
+
+
 		delta_i = 4.0_dp * R_Ks * re_en * gamma_i * beta_int
 
 		! create & write out correlation/g(t) functions
@@ -346,6 +360,14 @@ contains
 		if (allocated(index_m1)) then
 			deallocate(index_m1)
 		end if
+
+        if (allocated(norma_m1)) then
+            deallocate(norma_m1)
+        end if
+
+        if (allocated(norma_p1)) then
+            deallocate(norma_p1)
+        end if
 
 		if (allocated(corr_fun)) then
 			deallocate(corr_fun)

@@ -25,7 +25,7 @@ contains
 
 !		call forster_weighted_fluor()
 
-		nr_R = 21
+		nr_R = 0
 
 		call time_resolved_fluor_resp(nr_R)		! calculates the response function
 		call time_resolved_fluor_spec(nr_R)		! calculates the spectrum from response function
@@ -110,8 +110,8 @@ contains
 !!!!!!!!!!!!!!!
 !!! CALCULATE R(1_X) response functions for dimer
 !!!!!!
-		case(1)
-		print *, "Calculating diagrams #1.X"
+!		case(1)
+!		print *, "Calculating diagrams #1.X"
 
 		do e = 1, Ns
 			do b = 1, Ns
@@ -129,6 +129,19 @@ contains
 										 	 +(0.0_dp,2.0_dp)*aimag(goft(e,Nt2-1)) )*								&
 										 (				 intsplin(time(Nt2:Nt2+tau), real(AUX1(Nt2:Nt2+tau,b,b,e)))	&
 										+(0.0_dp,1.0_dp)*intsplin(time(Nt2:Nt2+tau),aimag(AUX1(Nt2:Nt2+tau,b,b,e)))	)
+					!! ------R1.1 coh.------
+                    AUX1 = 0
+                    do tau1 = Nt2, Nt2+tau
+                        AUX1(tau1,b,b,e) = exp(   (0.0_dp,1.0_dp) * (en(b)-en(e))*(tau1-Nt2)*gt1*dt &
+                                                - goft(e,tau1-1) - conjg(goft(b,tau1-1))          &
+                                                - goft(b,Nt2+tau-tau1) + conjg(goft(b,tau1-Nt2))    )
+                    end do
+                    R_trf(tau) = R_trf(tau) - (0.0_dp,1.0_dp) * dd(e)*(dd(b)**3)*cpl(b,e)   *                 &
+                                        exp( -(0.0_dp,1.0_dp)*en(b)*(tau-1)*gt1*dt                            &
+                                             -(0.0_dp,1.0_dp)*(en(e)-en(b))*(Nt2-1) - conjg(goft(b,tau-1))    &
+                                             +conjg(goft(b,Nt2+tau)) - conjg(goft(b,Nt2-1)) )*                &
+                                         (               intsplin(time(Nt2:Nt2+tau), real(AUX1(Nt2:Nt2+tau,b,b,e))) &
+                                        +(0.0_dp,1.0_dp)*intsplin(time(Nt2:Nt2+tau),aimag(AUX1(Nt2:Nt2+tau,b,b,e))) )
 					!! ------R1.2------
 					AUX1 = 0
 					do tau1 = 1, Nt2
@@ -142,6 +155,19 @@ contains
 											 +(0.0_dp,2.0_dp)*aimag(goft(e,Nt2-1)) )*					&
 										 (				 intsplin(time(1:Nt2), real(AUX1(1:Nt2,b,b,e)))	&
 										+(0.0_dp,1.0_dp)*intsplin(time(1:Nt2),aimag(AUX1(1:Nt2,b,b,e)))	)
+                   !! ------R1.2 coh.------
+                   AUX1 = 0
+                   do tau1 = 1, Nt2
+                       AUX1(tau1,b,b,e) = exp(   (0.0_dp,1.0_dp) * (en(b)-en(e))*(tau1-1)*gt1*dt   &
+                                               - conjg(goft(b,tau1-1)) + goft(b,Nt2-tau1)          &
+                                               - goft(b,Nt2+tau-tau1-1) - goft(e,tau1-1) )
+                   end do
+                   R_trf(tau) = R_trf(tau) - (0.0_dp,1.0_dp) * dd(e)*(dd(b)**3)*cpl(b,e)   *           &
+                                       exp( -(0.0_dp,1.0_dp)*en(b)*(tau-1)*gt1*dt                      &
+                                            -conjg(goft(b,tau-1)) + conjg(goft(b,Nt2+tau-2))           &
+                                            -conjg(goft(b,Nt2-1)) ) *                                  &
+                                        (               intsplin(time(1:Nt2), real(AUX1(1:Nt2,b,b,e))) &
+                                       +(0.0_dp,1.0_dp)*intsplin(time(1:Nt2),aimag(AUX1(1:Nt2,b,b,e))) )
 					!! ------R1.3------
 					AUX1 = 0
 					do tau1 = 1, Nt2
@@ -155,6 +181,19 @@ contains
 											 -(0.0_dp,2.0_dp)*aimag(goft(e,Nt2+tau-2))	)*				&
 										 (				 intsplin(time(1:Nt2), real(AUX1(1:Nt2,b,b,e)))	&
 										+(0.0_dp,1.0_dp)*intsplin(time(1:Nt2),aimag(AUX1(1:Nt2,b,b,e)))	)
+                   !! ------R1.3 coh.------
+                   AUX1 = 0
+                   do tau1 = 1, Nt2
+                       AUX1(tau1,b,b,e) = exp(   (0.0_dp,1.0_dp) * (en(b)-en(e))*(tau1-1)*gt1*dt         &
+                                               - conjg(goft(b,tau1-1)) - goft(e,tau1-1)                  &
+                                               - conjg(goft(e,Nt2-tau1)) + conjg(goft(e,Nt2+tau-tau1-1)) )
+                   end do
+                   R_trf(tau) = R_trf(tau) + (0.0_dp,1.0_dp) * dd(b)*(dd(e)**3)*cpl(b,e)   *           &
+                                       exp( -(0.0_dp,1.0_dp)*en(e)*(tau-1)*gt1*dt                      &
+                                            -conjg(goft(e,tau-1)) - goft(e,Nt2+tau-2)           &
+                                            +goft(e,Nt2-1) ) *                                  &
+                                        (               intsplin(time(1:Nt2), real(AUX1(1:Nt2,b,b,e))) &
+                                       +(0.0_dp,1.0_dp)*intsplin(time(1:Nt2),aimag(AUX1(1:Nt2,b,b,e))) )
 				end do
 			end if
 			end do
@@ -164,7 +203,7 @@ contains
 !!!!!!!!!!!!!!!
 !!! R(1_2)_RTF for dimer
 !!!!!!
-		case(21)
+		!case(21)
 		print *, "Calculating diagram #2.1"
 
 		do e = 1, Ns
@@ -179,7 +218,7 @@ contains
 													- goft(e,Nt2-tau1) + goft(e,Nt2+tau-tau1-1)			&
 													- goft(e,tau2-tau1)-goft(b,tau2-tau1)	)
 						end do
-						AUX2(tau2,b,b,e) = exp(	 (0.0_dp,1.0_dp) * (en(e)-en(b))*(tau2-Nt2)*gt1*dt		&
+						AUX2(tau2,b,b,e) = exp(	 (0.0_dp,1.0_dp) * (en(e)-en(b))*(tau2-1)*gt1*dt		&
 											    +(0.0_dp,2.0_dp) * aimag(goft(e,tau2-1))				&
 												- goft(e,Nt2+tau-tau2) + conjg(goft(e,tau2-Nt2)) ) *	&
 									 (				 intsplin(time(1:Nt2), real(AUX1(1:Nt2,b,b,e)))	&
@@ -187,8 +226,7 @@ contains
 					end do
 					R_trf(tau) = R_trf(tau) - (dd(e)**4)*(cpl(e,b)**2)	*									&
 										exp( - (0.0_dp,1.0_dp)*en(e)*(tau-1)*gt1*dt - conjg(goft(e,tau-1))	&
-											 + (0.0_dp,2.0_dp) * aimag(goft(e,Nt2-1)-goft(e,Nt2+tau-2))		&
-											 - (0.0_dp,1.0_dp)*(en(b)-en(e))*(Nt2-1)*gt1*dt		)	*		&
+											 + (0.0_dp,2.0_dp) * aimag(goft(e,Nt2-1)-goft(e,Nt2+tau-2))	)*	&
 											 ( intsplin(time(Nt2:Nt2+tau), real(AUX2(Nt2:Nt2+tau,b,b,e)))	&
 							  +(0.0_dp,1.0_dp)*intsplin(time(Nt2:Nt2+tau),aimag(AUX2(Nt2:Nt2+tau,b,b,e)))	)
 				end do
@@ -198,9 +236,45 @@ contains
 
 
 !!!!!!!!!!!!!!!
+!!! R(1_2)_RTF for dimer COHERENT I.C.s
+!!!!!!
+        !case(21c)
+        print *, "Calculating diagram #2.1 coherent i.c."
+
+        do e = 1, Ns
+            do b = 1, Ns
+            if (e/=b) then
+                do tau = 1, Nt1
+                    AUX1 = 0; AUX2 = 0
+                    do tau2 = Nt2, Nt2+tau
+                        do tau1 = 1, Nt2
+                            AUX1(tau1,b,b,e) = exp(   (0.0_dp,1.0_dp) * (en(b)-en(e))*(tau1-1)*gt1*dt   &
+                                                    - goft(e,tau1-1) - conjg(goft(b,tau1-1))            &
+                                                    + goft(b,Nt2-tau1)  + goft(e,Nt2+tau-tau1-1)        &
+                                                    - goft(e,tau2-tau1) - goft(b,tau2-tau1)   )
+                        end do
+                        AUX2(tau2,b,b,e) = exp(  (0.0_dp,1.0_dp) * (en(e)-en(b))*(tau2-1)*gt1*dt        &
+                                                + goft(e,tau2-1) + conjg(goft(b,tau2-1))                &
+                                                - goft(e,Nt2+tau-tau2-1) - conjg(goft(b,tau2-Nt2)) ) *  &
+                                     (               intsplin(time(1:Nt2), real(AUX1(1:Nt2,b,b,e)))     &
+                                    +(0.0_dp,1.0_dp)*intsplin(time(1:Nt2),aimag(AUX1(1:Nt2,b,b,e))) )
+                    end do
+                    R_trf(tau) = R_trf(tau) - (dd(b)**2)*(dd(e)**2)*(cpl(e,b)**2)  *            &
+                                        exp( - (0.0_dp,1.0_dp)*en(e)*(tau-1)*gt1*dt             &
+                                             - conjg(goft(b,Nt2-1)) - goft(e,Nt2+tau-2)         &
+                                             - (0.0_dp,1.0_dp)*(en(e)-en(b))*(Nt2-1)*gt1*dt )*  &
+                                             ( intsplin(time(Nt2:Nt2+tau), real(AUX2(Nt2:Nt2+tau,b,b,e)))   &
+                              +(0.0_dp,1.0_dp)*intsplin(time(Nt2:Nt2+tau),aimag(AUX2(Nt2:Nt2+tau,b,b,e)))   )
+                end do
+            end if
+            end do
+        end do
+
+
+!!!!!!!!!!!!!!!
 !!! R(2_2)_RTF for dimer
 !!!!!!
-		case(22)
+		!case(22)
 		print *, "Calculating diagram #2.2"
 
 		do e = 1, Ns
@@ -216,15 +290,14 @@ contains
 													- goft(e,tau2-tau1)- goft(b,tau2-tau1)	)
 							AUX1(tau1,b,b,e) = conjg(AUX1(tau1,b,b,e))
 						end do
-						AUX2(tau2,b,b,e) = exp(	 (0.0_dp,1.0_dp) * (en(b)-en(e))*(tau2-Nt2)*gt1*dt	&
+						AUX2(tau2,b,b,e) = exp(	 (0.0_dp,1.0_dp) * (en(b)-en(e))*(tau2-1)*gt1*dt	&
 											    -(0.0_dp,2.0_dp) * aimag(goft(e,tau2-1))			&
 												- goft(b,Nt2+tau-tau2) - goft(b,tau2-Nt2) ) *		&
 									 (				 intsplin(time(1:Nt2), real(AUX1(1:Nt2,b,b,e)))	&
 									+(0.0_dp,1.0_dp)*intsplin(time(1:Nt2),aimag(AUX1(1:Nt2,b,b,e)))	)
 					end do
 					R_trf(tau) = R_trf(tau) + (dd(e)**2)*(dd(b)**2)*(cpl(e,b)**2)	*						&
-										exp( - (0.0_dp,1.0_dp)*en(b)*(tau-1)*gt1*dt - conjg(goft(b,tau-1))	&
-											 - (0.0_dp,1.0_dp)*(en(e)-en(b))*(Nt2-1)*gt1*dt	)	*			&
+								exp( - (0.0_dp,1.0_dp)*en(b)*(tau-1)*gt1*dt - conjg(goft(b,tau-1))	)	*	&
 											 ( intsplin(time(Nt2:Nt2+tau), real(AUX2(Nt2:Nt2+tau,b,b,e)))	&
 							  +(0.0_dp,1.0_dp)*intsplin(time(Nt2:Nt2+tau),aimag(AUX2(Nt2:Nt2+tau,b,b,e)))	)
 				end do
@@ -234,15 +307,53 @@ contains
 
 
 !!!!!!!!!!!!!!!
+!!! R(2_2)_RTF for dimer COHERENT I.C.s
+!!!!!!
+        !case(22c)
+        print *, "Calculating diagram #2.2 coherent i.c."
+
+        do e = 1, Ns
+            do b = 1, Ns
+            if (e/=b) then
+                do tau = 1, Nt1
+                    AUX1 = 0; AUX2 = 0
+                    do tau2 = Nt2, Nt2+tau
+                        do tau1 = 1, Nt2
+                            AUX1(tau1,b,b,e) = exp( - (0.0_dp,1.0_dp) * (en(b)-en(e))*(tau1-1)*gt1*dt   &
+                                                    - goft(b,tau1-1) - conjg(goft(e,tau1-1))            &
+                                                    - goft(e,Nt2-tau1) - goft(b,Nt2+tau-tau1-1)         &
+                                                    + goft(e,tau2-tau1) + goft(b,tau2-tau1) )
+                            AUX1(tau1,b,b,e) = conjg(AUX1(tau1,b,b,e))
+                        end do
+                        AUX2(tau2,b,b,e) = exp(   (0.0_dp,1.0_dp) * (en(b)-en(e))*(tau2-1)*gt1*dt       &
+                                                - goft(e,tau2-1) - conjg(goft(b,tau2-1))                &
+                                                - conjg(goft(e,tau2-Nt2)) - goft(b,Nt2+tau-tau2-1) ) *  &
+                                     (               intsplin(time(1:Nt2), real(AUX1(1:Nt2,b,b,e)))     &
+                                    +(0.0_dp,1.0_dp)*intsplin(time(1:Nt2),aimag(AUX1(1:Nt2,b,b,e)))     )
+                    end do
+                    R_trf(tau) = R_trf(tau) + (dd(e)**2)*(dd(b)**2)*(cpl(e,b)**2)   *           &
+                                        exp( - (0.0_dp,1.0_dp)*en(b)*(tau-1)*gt1*dt             &
+                                             + conjg(goft(b,Nt2+tau-2)) + goft(e,Nt2-1)         &
+                                             - (0.0_dp,1.0_dp)*(en(b)-en(e))*(Nt2-1)*gt1*dt ) * &
+                                          (               intsplin(time(1:Nt2), real(AUX2(1:Nt2,b,b,e))) &
+                                         +(0.0_dp,1.0_dp)*intsplin(time(1:Nt2),aimag(AUX2(1:Nt2,b,b,e))) )
+                end do
+            end if
+            end do
+        end do
+
+
+!!!!!!!!!!!!!!!
 !!! R(3_2)_RTF for dimer; there are no coherence transfer terms
 !!!!!!
-		case(23)
+		!case(23)
 		print *, "Calculating diagram #2.3"
 
 		do e = 1, Ns
 			do b = 1, Ns
 			if (e/=b) then
 				do tau = 1, Nt1
+				    AUX1 = 0; AUX2 = 0
 					do tau1 = 1, Nt2
 						do tau2 = 1, Nt2
 							AUX2(tau2,b,b,e) = exp(	- (0.0_dp,1.0_dp) * (en(e)-en(b))*(tau2-1)*gt1*dt	&
@@ -258,9 +369,9 @@ contains
 									+(0.0_dp,1.0_dp)*intsplin(time(1:Nt2),aimag(AUX2(1:Nt2,b,b,e)))	)
 					end do
 					R_trf(tau) = R_trf(tau) + (dd(e)**2)*(dd(b)**2)*(cpl(e,b)**2)	*							&
-										exp( -(0.0_dp,1.0_dp)*en(b)*(tau-1)*gt1*dt - conjg(goft(b,tau-1)) )	*	&
+										exp( - (0.0_dp,1.0_dp)*en(b)*(tau-1)*gt1*dt - conjg(goft(b,tau-1)) ) *  &
 											 (				 intsplin(time(1:Nt2), real(AUX1(1:Nt2,b,b,e)))		&
-											+(0.0_dp,1.0_dp)*intsplin(time(1:Nt2),aimag(AUX1(1:Nt2,b,b,e)))	)
+											+(0.0_dp,1.0_dp)*intsplin(time(1:Nt2),aimag(AUX1(1:Nt2,b,b,e)))	    )
 				end do
 			end if
 			end do
@@ -335,9 +446,46 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!
+!!! R(3_2)_RTF for dimer COHERENT I.C.s
+!!!!!!
+        !case(23c)
+        print *, "Calculating diagram #2.3 coherent i.c."
+
+        do e = 1, Ns
+            do b = 1, Ns
+            if (e/=b) then
+                do tau = 1, Nt1
+                    AUX1 = 0; AUX2 = 0
+                    do tau2 = 1, Nt2
+                        do tau1 = 1, Nt2
+                            AUX1(tau1,b,b,e) = exp( - (0.0_dp,1.0_dp) * (en(b)-en(e))*(tau1-1)*gt1*dt   &
+                                                    - goft(b,tau1-1) - conjg(goft(e,tau1-1))            &
+                                                    - goft(e,Nt2-tau1) - goft(b,Nt2+tau-tau1-1)           &
+                                                    + goft(e,tau2-tau1) + goft(b,tau2-tau1) )
+                            AUX1(tau1,b,b,e) = conjg(AUX1(tau1,b,b,e))
+                        end do
+                        AUX2(tau2,b,b,e) = exp(   (0.0_dp,1.0_dp) * (en(b)-en(e))*(tau2-1)*gt1*dt   &
+                                                - goft(e,tau2-1) - conjg(goft(b,tau2-1))            &
+                                                - goft(e,Nt2-tau2) - goft(b,Nt2+tau-tau2-1) ) *       &
+                                     (               intsplin(time(1:Nt2), real(AUX1(1:Nt2,b,b,e))) &
+                                    +(0.0_dp,1.0_dp)*intsplin(time(1:Nt2),aimag(AUX1(1:Nt2,b,b,e))) )
+                    end do
+                    R_trf(tau) = R_trf(tau) + (dd(e)**2)*(dd(b)**2)*(cpl(e,b)**2)   *           &
+                                        exp( - (0.0_dp,1.0_dp)*en(b)*(tau-1)*gt1*dt             &
+                                             + conjg(goft(b,Nt2+tau-2)) + goft(e,Nt2-1)         &
+                                             - (0.0_dp,1.0_dp)*(en(b)-en(e))*(Nt2-1)*gt1*dt ) * &
+                                          (               intsplin(time(1:Nt2), real(AUX2(1:Nt2,b,b,e))) &
+                                         +(0.0_dp,1.0_dp)*intsplin(time(1:Nt2),aimag(AUX2(1:Nt2,b,b,e))) )
+                end do
+            end if
+            end do
+        end do
+
+
+!!!!!!!!!!!!!!!
 !!! R(4_2)_RTF for dimer
 !!!!!!
-		case(24)
+		!case(24)
 		print *, "Calculating diagram #2.4"
 
 		do e = 1, Ns
@@ -387,9 +535,45 @@ contains
 
 
 !!!!!!!!!!!!!!!
+!!! R(4_2)_RTF for dimer COHERENT I.C.s
+!!!!!!
+        !case(24c)
+        print *, "Calculating diagram #2.4 coherent i.c."
+
+        do e = 1, Ns
+            do b = 1, Ns
+            if (e/=b) then
+                do tau = 1, Nt1
+                    AUX1 = 0; AUX2 = 0
+                    do tau2 = 1, Nt2
+                        do tau1 = 1, tau2
+                            AUX1(tau1,b,b,e) = exp(   (0.0_dp,1.0_dp) * (en(b)-en(e))*(tau1-1)*gt1*dt   &
+                                                    - goft(e,tau1-1) - conjg(goft(b,tau1-1))            &
+                                                    + goft(b,Nt2-tau1)  + goft(e,Nt2+tau-tau1-1)        &
+                                                    - goft(e,tau2-tau1) - goft(b,tau2-tau1)   )
+                        end do
+                        AUX2(tau2,b,b,e) = exp(  (0.0_dp,1.0_dp) * (en(e)-en(b))*(tau2-1)*gt1*dt        &
+                                                + goft(e,tau2-1) + conjg(goft(b,tau2-1))                &
+                                                - goft(e,Nt2+tau-tau2-1) - goft(b,Nt2-tau2) ) *         &
+                                     (               intsplin(time(1:tau2), real(AUX1(1:tau2,b,b,e)))   &
+                                    +(0.0_dp,1.0_dp)*intsplin(time(1:tau2),aimag(AUX1(1:tau2,b,b,e))) )
+                    end do
+                    R_trf(tau) = R_trf(tau) - (dd(b)**2)*(dd(e)**2)*(cpl(e,b)**2)  *            &
+                                        exp( - (0.0_dp,1.0_dp)*en(e)*(tau-1)*gt1*dt             &
+                                             - conjg(goft(b,Nt2-1)) - goft(e,Nt2+tau-2)         &
+                                             - (0.0_dp,1.0_dp)*(en(e)-en(b))*(Nt2-1)*gt1*dt ) * &
+                                             ( intsplin(time(1:Nt2), real(AUX2(1:Nt2,b,b,e)))   &
+                              +(0.0_dp,1.0_dp)*intsplin(time(1:Nt2),aimag(AUX2(1:Nt2,b,b,e)))   )
+                end do
+            end if
+            end do
+        end do
+
+
+!!!!!!!!!!!!!!!
 !!! R(5_2)_RTF for dimer; there are no coherence transfer terms
 !!!!!!
-		case(25)
+		!case(25)
 		print *, "Calculating diagram #2.5"
 
 		do e = 1, Ns
@@ -443,23 +627,60 @@ contains
 
 
 !!!!!!!!!!!!!!!
+!!! R(5_2)_RTF for dimer COHERENT I.C.s
+!!!!!!
+        !case(25c)
+        print *, "Calculating diagram #2.5 coherent i.c."
+
+        do e = 1, Ns
+            do b = 1, Ns
+            if (e/=b) then
+                do tau = 1, Nt1
+                    AUX1 = 0; AUX2 = 0
+                    do tau2 = 1, Nt2
+                        do tau1 = 1, tau2
+                            AUX1(tau1,b,b,e) = exp(   (0.0_dp,1.0_dp) * (en(b)-en(e))*(tau1-1)*gt1*dt          &
+                                                    - goft(e,tau1-1) - conjg(goft(b,tau1-1))                   &
+                                                    + conjg(goft(b,Nt2-tau1))  + conjg(goft(e,Nt2+tau-tau1-1)) &
+                                                    - conjg(goft(e,tau2-tau1)) - conjg(goft(b,tau2-tau1))   )
+                        end do
+                        AUX2(tau2,b,b,e) = exp(  (0.0_dp,1.0_dp) * (en(e)-en(b))*(tau2-1)*gt1*dt               &
+                                                + goft(e,tau2-1) + conjg(goft(b,tau2-1))                       &
+                                                - conjg(goft(e,Nt2+tau-tau2-1)) - conjg(goft(b,Nt2-tau2)) ) *  &
+                                     (               intsplin(time(1:tau2), real(AUX1(1:tau2,b,b,e)))          &
+                                    +(0.0_dp,1.0_dp)*intsplin(time(1:tau2),aimag(AUX1(1:tau2,b,b,e))) )
+                    end do
+                    R_trf(tau) = R_trf(tau) - (dd(b)**2)*(dd(e)**2)*(cpl(e,b)**2)  *            &
+                                        exp( - (0.0_dp,1.0_dp)*en(e)*(tau-1)*gt1*dt             &
+                                             - conjg(goft(b,Nt2-1)) - goft(e,Nt2+tau-2)         &
+                                             - (0.0_dp,1.0_dp)*(en(e)-en(b))*(Nt2-1)*gt1*dt )*  &
+                                             ( intsplin(time(1:Nt2), real(AUX2(1:Nt2,b,b,e)))   &
+                              +(0.0_dp,1.0_dp)*intsplin(time(1:Nt2),aimag(AUX2(1:Nt2,b,b,e)))   )
+                end do
+            end if
+            end do
+        end do
+
+
+!!!!!!!!!!!!!!!
 !!! R(6_2)_RTF for dimer; there are no coherence transfer terms
 !!!!!!
-		case(26)
+		!case(26)
 		print *, "Calculating diagram #2.6"
 
 		do e = 1, Ns
 			do b = 1, Ns
 			if (e/=b) then
 				do tau = 1, Nt1
+				    AUX1 = 0; AUX2 = 0
 					do tau2 = Nt2, Nt2+tau
 						do tau1 = Nt2, tau2
-							AUX1(tau1,b,b,e) = exp(	  (0.0_dp,1.0_dp) * (en(b)-en(e))*(tau1-Nt2)*gt1*dt	&
+							AUX1(tau1,b,b,e) = exp(	  (0.0_dp,1.0_dp) * (en(b)-en(e))*(tau1-1)*gt1*dt	&
 													- (0.0_dp,2.0_dp) * aimag(goft(e,tau1-1))			&
 													- conjg(goft(e,tau1-1)) + goft(e,Nt2+tau-tau1)			&
 													- goft(e,tau2-tau1)-goft(b,tau2-tau1)	)
 						end do
-						AUX2(tau2,b,b,e) = exp(	 (0.0_dp,1.0_dp) * (en(e)-en(b))*(tau2-Nt2)*gt1*dt	&
+						AUX2(tau2,b,b,e) = exp(	 (0.0_dp,1.0_dp) * (en(e)-en(b))*(tau2-1)*gt1*dt	&
 											    +(0.0_dp,2.0_dp) * aimag(goft(e,tau2-1))		&
 												- goft(e,Nt2+tau-tau2) + conjg(goft(e,tau2-Nt2)) ) *		&
 									 (				 intsplin(time(Nt2:tau2), real(AUX1(Nt2:tau2,b,b,e)))	&
@@ -474,6 +695,42 @@ contains
 			end if
 			end do
 		end do
+
+
+!!!!!!!!!!!!!!!
+!!! R(6_2)_RTF for dimer COHERENT I.C.s
+!!!!!!
+        !case(26c)
+        print *, "Calculating diagram #2.6 coherent i.c."
+
+        do e = 1, Ns
+            do b = 1, Ns
+            if (e/=b) then
+                do tau = 1, Nt1
+                    AUX1 = 0; AUX2 = 0
+                    do tau2 = Nt2, Nt2+tau
+                        do tau1 = Nt2, tau2
+                            AUX1(tau1,b,b,e) = exp(   (0.0_dp,1.0_dp) * (en(b)-en(e))*(tau1-1)*gt1*dt   &
+                                                    - goft(e,tau1-1) - conjg(goft(b,tau1-1))            &
+                                                    + conjg(goft(b,tau1-Nt2))  + goft(e,Nt2+tau-tau1-1)        &
+                                                    - goft(e,tau2-tau1) - goft(b,tau2-tau1)   )
+                        end do
+                        AUX2(tau2,b,b,e) = exp(  (0.0_dp,1.0_dp) * (en(e)-en(b))*(tau2-1)*gt1*dt        &
+                                                + goft(e,tau2-1) + conjg(goft(b,tau2-1))                &
+                                                - goft(e,Nt2+tau-tau2-1) - conjg(goft(b,tau2-Nt2)) ) *  &
+                                     (               intsplin(time(Nt2:tau2), real(AUX1(Nt2:tau2,b,b,e)))     &
+                                    +(0.0_dp,1.0_dp)*intsplin(time(Nt2:tau2),aimag(AUX1(Nt2:tau2,b,b,e))) )
+                    end do
+                    R_trf(tau) = R_trf(tau) - (dd(b)**2)*(dd(e)**2)*(cpl(e,b)**2)  *            &
+                                        exp( - (0.0_dp,1.0_dp)*en(e)*(tau-1)*gt1*dt             &
+                                             - conjg(goft(b,Nt2-1)) - goft(e,Nt2+tau-2)         &
+                                             - (0.0_dp,1.0_dp)*(en(e)-en(b))*(Nt2-1)*gt1*dt )*  &
+                                             ( intsplin(time(Nt2:Nt2+tau), real(AUX2(Nt2:Nt2+tau,b,b,e)))   &
+                              +(0.0_dp,1.0_dp)*intsplin(time(Nt2:Nt2+tau),aimag(AUX2(Nt2:Nt2+tau,b,b,e)))   )
+                end do
+            end if
+            end do
+        end do
 
 
 		end select
